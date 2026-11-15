@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Join room · RoomSplit{% endblock %}
+{% block content %}
+  <section>
+    <h1>Join room {{ room.code }}</h1>
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <form action="{{ url_for('rooms.join_by_invite', invite_token=room.invite_token) }}"
+          method="post">
+      <label for="room-password">Room password</label>
+      <input id="room-password" name="password" type="password" required>
+      <button type="submit">Join room</button>
+    </form>
+  </section>
+{% endblock %}

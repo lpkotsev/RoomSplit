@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}RoomSplit{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <main>
+      <header>
+        <a href="{{ url_for('index') }}"><strong>RoomSplit</strong></a>
+        {% if g.current_user %}
+          <nav aria-label="Account">
+            <a href="{{ url_for('rooms.index') }}">My rooms</a>
+            <span>Signed in as {{ g.current_user.username }}</span>
+            <form action="{{ url_for('auth.sign_out') }}" method="post">
+              <button type="submit">Sign out</button>
+            </form>
+          </nav>
+        {% endif %}
+      </header>
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}My rooms · RoomSplit{% endblock %}
+{% block content %}
+  <section>
+    <h1>My rooms</h1>
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    {% if rooms %}
+      <ul>
+        {% for room in rooms %}
+          <li><a href="{{ url_for('rooms.show', room_id=room.id) }}">Room {{ room.code }}</a></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>You have not joined a room yet. Create one or join with a room code below.</p>
+    {% endif %}
+  </section>
+  <section>
+    <h2>Create a room</h2>
+    <form action="{{ url_for('rooms.create') }}" method="post">
+      <label for="new-room-password">Room password</label>
+      <input id="new-room-password" name="password" type="password" required>
+      <button type="submit">Create room</button>
+    </form>
+  </section>
+  <section>
+    <h2>Join a room by code</h2>
+    <form action="{{ url_for('rooms.join_by_code') }}" method="post">
+      <label for="room-code">Room code</label>
+      <input id="room-code" name="room_code" required>
+      <label for="room-password">Room password</label>
+      <input id="room-password" name="password" type="password" required>
+      <button type="submit">Join room</button>
+    </form>
+  </section>
+{% endblock %}

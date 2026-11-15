@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Categories · RoomSplit{% endblock %}
+{% block content %}
+  <section>
+    <h1>Categories for room {{ room.code }}</h1>
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <ul>
+      {% for category in categories %}
+        <li>{{ category.name }}</li>
+      {% else %}
+        <li>No categories have been created yet.</li>
+      {% endfor %}
+    </ul>
+    <h2>Create a category</h2>
+    <form action="{{ url_for('categories.index', room_id=room.id) }}" method="post">
+      <label for="category-name">Category name</label>
+      <input id="category-name" name="name" required>
+      <button type="submit">Create category</button>
+    </form>
+    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to room</a></p>
+  </section>
+{% endblock %}

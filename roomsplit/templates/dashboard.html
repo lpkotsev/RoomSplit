@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Room {{ room.code }} dashboard · RoomSplit{% endblock %}
+{% block content %}
+  <section class="dashboard" aria-labelledby="dashboard-title">
+    <h1 id="dashboard-title">Room dashboard</h1>
+    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to room {{ room.code }}</a></p>
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <form class="dashboard-filter" method="get" aria-label="Filter dashboard by date">
+      <label for="start-date">From</label>
+      <input id="start-date" name="start_date" type="date" value="{{ start_value }}">
+      <label for="end-date">Through</label>
+      <input id="end-date" name="end_date" type="date" value="{{ end_value }}">
+      <button type="submit">Apply date range</button>
+      {% if start_value or end_value %}
+        <a href="{{ url_for('dashboard.show', room_id=room.id) }}">Clear dates</a>
+      {% endif %}
+    </form>
+    {% if start_value or end_value %}
+      <p>Showing activity from {{ start_value or "any date" }} through {{ end_value or "any date" }} (inclusive).</p>
+    {% else %}
+      <p>Showing all dates.</p>
+    {% endif %}
+
+    <section aria-labelledby="category-heading">
+      <h2 id="category-heading">Spending by category</h2>
+      {% if has_category_activity and category_rows %}
+        <ul class="bar-list" aria-label="Spending totals by category">
+          {% for row in category_rows %}
+            <li class="bar-row">
+              <span class="bar-label">{{ row.name }}</span>
+              <div class="bar-track" role="img" aria-label="{{ row.name }}: {{ row.amount_display }}">
+                <span class="bar-fill{% if row.negative %} negative{% endif %}"
+                      style="width: {{ row.bar_width }}%"></span>
+              </div>
+              <span class="bar-value">{{ row.amount_display }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No spending recorded in this date range.</p>
+      {% endif %}
+    </section>
+
+    <section aria-labelledby="balance-heading">
+      <h2 id="balance-heading">Member balances</h2>
+      {% if has_balance_activity %}
+        <p>Positive balances are owed to that member; negative balances mean that member owes.</p>
+      {% else %}
+        <p>No balance activity in this date range.</p>
+      {% endif %}
+      {% if balance_rows %}
+        <ul class="bar-list" aria-label="Member balances">
+          {% for row in balance_rows %}
+            <li class="bar-row">
+              <span class="bar-label">
+                {{ row.name }}{% if not row.is_current_member %} (former member){% endif %}
+              </span>
+              <div class="bar-track" role="img"
+                   aria-label="{{ row.name }}: {{ row.balance_label }} EUR {{ row.amount_display }}">
+                <span class="bar-fill{% if row.negative %} negative{% endif %}"
+                      style="width: {{ row.bar_width }}%"></span>
+              </div>
+              <span class="bar-value">{{ row.balance_label }} EUR {{ row.amount_display }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

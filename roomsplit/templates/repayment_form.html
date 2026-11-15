@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{% if repayment %}Edit repayment{% else %}Record repayment{% endif %} · RoomSplit{% endblock %}
+{% block content %}
+  <section>
+    <h1>{% if repayment %}Edit repayment{% else %}Record a repayment{% endif %}</h1>
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <form action="{% if repayment %}{{ url_for('repayments.edit_repayment', room_id=room.id, repayment_id=repayment.id) }}{% else %}{{ url_for('repayments.new_repayment', room_id=room.id) }}{% endif %}"
+          method="post">
+      <label for="payer">Paid by</label>
+      <select id="payer" name="payer_id" required>
+        {% for member in members %}
+          <option value="{{ member.id }}"
+                  {% if values.get('payer_id') == member.id %}selected{% endif %}>
+            {{ member.username }}
+          </option>
+        {% endfor %}
+      </select>
+      <label for="recipient">Paid to</label>
+      <select id="recipient" name="recipient_id" required>
+        {% for member in members %}
+          <option value="{{ member.id }}"
+                  {% if values.get('recipient_id') == member.id %}selected{% endif %}>
+            {{ member.username }}
+          </option>
+        {% endfor %}
+      </select>
+      <label for="amount">Amount (EUR)</label>
+      <input id="amount" name="amount" type="number" min="0.01" step="0.01"
+             value="{{ values.get('amount', '') }}" required>
+      <label for="date">Date</label>
+      <input id="date" name="date" type="date"
+             value="{{ values.get('date', '') }}" required>
+      <label for="note">Note (optional)</label>
+      <input id="note" name="note" value="{{ values.get('note', '') }}">
+      <button type="submit">{% if repayment %}Save repayment{% else %}Record repayment{% endif %}</button>
+    </form>
+    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to room</a></p>
+  </section>
+{% endblock %}
