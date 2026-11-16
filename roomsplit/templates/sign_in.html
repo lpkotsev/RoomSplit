@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Sign in · RoomSplit{% endblock %}
 {% block content %}
-  <section>
+  <section class="card form-card">
+    <p class="eyebrow">WELCOME BACK</p>
     <h1>Sign in</h1>
+    <p>Pick up where you left off.</p>
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
     <form action="{{ url_for('auth.sign_in') }}" method="post">
       <label for="username">Username</label>

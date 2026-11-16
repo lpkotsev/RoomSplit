@@ -160,7 +160,7 @@ class RemainderPayerEntryTests(unittest.TestCase):
         )
         self.storage = self.app.extensions["roomsplit_storage"]
         self.owner, self.owner_id = self.create_user("owner")
-        self.owner.post("/rooms/create", data={"password": "room-password"})
+        self.owner.post("/rooms/create", data={"name": "Shared event", "password": "room-password"})
         self.room = next(iter(self.storage.rooms.values()))
         self.member, self.member_id = self.create_user("member")
         self.member.post(
@@ -212,45 +212,28 @@ class RemainderPayerEntryTests(unittest.TestCase):
             "remainder_payer_id": remainder_payer_id,
         }
 
-    def test_equal_expense_records_selected_remainder_payer(self):
+    def test_equal_expense_records_highest_payer_for_remainder(self):
         form = self.member.get(f"/rooms/{self.room.id}/expenses/new")
         self.assertEqual(form.status_code, 200)
-        self.assertIn(b'name="remainder_payer_id"', form.data)
+        self.assertNotIn(b'name="remainder_payer_id"', form.data)
 
         response = self.member.post(
             f"/rooms/{self.room.id}/expenses/new",
-            data=self.expense_data(self.member_id),
+            data=self.expense_data(self.owner_id),
         )
 
         self.assertEqual(response.status_code, 302)
         expense = next(iter(self.storage.expenses.values()))
         self.assertEqual(expense.remainder_payer_id, self.member_id)
 
-    def test_equal_expense_requires_a_recorded_payer_as_remainder_recipient(self):
-        missing = self.member.post(
+    def test_single_highest_payer_does_not_require_selection(self):
+        response = self.member.post(
             f"/rooms/{self.room.id}/expenses/new",
             data=self.expense_data(),
         )
-        self.assertEqual(missing.status_code, 400)
-        self.assertIn(
-            b"Choose a payer to receive any rounding remainder.",
-            missing.data,
-        )
-
-        nonpayer_data = self.expense_data(self.owner_id)
-        nonpayer_data[f"payer_{self.owner_id}"] = ""
-        nonpayer_data[f"payer_{self.member_id}"] = "10.00"
-        nonpayer_data["remainder_payer_id"] = self.owner_id
-        nonpayer = self.member.post(
-            f"/rooms/{self.room.id}/expenses/new",
-            data=nonpayer_data,
-        )
-        self.assertEqual(nonpayer.status_code, 400)
-        self.assertIn(
-            b"Choose a payer to receive any rounding remainder.",
-            nonpayer.data,
-        )
-        self.assertEqual(self.storage.expenses, {})
+        self.assertEqual(response.status_code, 302)
+        expense = next(iter(self.storage.expenses.values()))
+        self.assertEqual(expense.remainder_payer_id, self.member_id)
 
 
 if __name__ == "__main__":

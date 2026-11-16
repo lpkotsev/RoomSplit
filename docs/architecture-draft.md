@@ -5,20 +5,29 @@ This draft proposes module responsibilities; the stack, session, and runtime-dat
 ## Proposed module responsibilities
 
 - **Accounts and sign-in:** Account registration and username/password sign-in; identify the current user for authorization checks.
-- **Rooms, membership, and permissions:** Room creation and room access using the code or invite link together with the creator-set password; membership state; role and permission checks before room actions. The creator is the room owner and assigns a separate administrator after creating the room.
+- **Rooms, membership, and permissions:** Room creation and room access using the code or invite link together with the creator-set password; membership state; role and permission checks before room actions. The creator is the room owner and can appoint any current member, including themselves, as administrator. The administrator can manage any expense or repayment; other members can manage only records they created.
+- **Event naming:** The interface calls rooms events. A room stores a required event name and retains its generated random code, presented as the event hashcode. Existing room routes and password-protected invite links remain in use.
 - **Expenses and categories:** Validate and record expense details, dates, currency, payer contributions, and categories; support custom categories.
-- **Split and balance calculations:** Isolate equal/custom split arithmetic and member balance derivation. Use `Decimal` and cent-level validation. Round equal shares to cents and assign any remainder to a payer’s share. If there are multiple payers, the person recording the expense chooses the payer who receives the remainder. For example, a €10.00 equal split among three members gives the selected payer €3.34 and the other two members €3.33 each.
-- **Repayments and refunds:** Record repayments and apply them to the payer-recipient balance. Record linked or unlinked refunds with the specified balance effects. Any member may edit or delete only the refund they recorded.
+- **Split and balance calculations:** Expenses support equal or custom splits.
+  Equal splits assign the cent remainder to the largest payer; the recorder
+  chooses between tied largest payers. Custom shares total the expense amount.
+  Expense edits preserve participant snapshots; edits and deletions that
+  invalidate recorded repayments are rejected. Use `Decimal` and cent-level
+  validation.
+- **Dates:** Expense and repayment dates default to the current local date
+  when left blank, including when an expense or repayment is edited.
+- **Repayments:** Record repayments and apply them to the payer and recipient's
+  member balances; no money is transferred.
 - **Data storage:** Keep all records in runtime-only memory, including account records and password hashes. Do not persist them. On app restart, the runtime data is cleared and previous sessions no longer resolve to an account.
 - **Dashboard and charts:** Present room balances and spending by category, with date-range filters. Specific chart designs and other filters remain `OPEN`.
-- **Tests:** Verify confirmed acceptance criteria, validation, access controls, calculation invariants, refund/repayment balance effects, and explicitly approved edge-case rules.
+- **Tests:** Verify confirmed acceptance criteria, validation, access controls, calculation invariants, repayment balance effects, and explicitly approved edge-case rules.
 
 ## Proposed data flow
 
 1. A user signs in and requests an action for a room.
 2. The room membership and permissions boundary verifies that the user may access that room and perform the action.
-3. Expense, repayment, or refund input is validated before being recorded in the in-memory store.
-4. Expense and split records are passed to the calculation responsibility to derive member balances; repayment and refund records affect balances according to confirmed rules.
+3. Expense or repayment input is validated before being recorded in the in-memory store.
+4. Expense and split records are passed to the calculation responsibility to derive member balances; repayment records affect balances according to confirmed rules.
 5. The dashboard reads authorized room data and presents balances and category totals using the selected date range.
 6. Tests exercise validation, permissions, data flow, and balance invariants without using real user or financial data.
 

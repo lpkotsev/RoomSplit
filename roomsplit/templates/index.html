@@ -1,14 +1,55 @@
 {% extends "base.html" %}
 {% block title %}RoomSplit{% endblock %}
 {% block content %}
-  <section>
-    <h1>RoomSplit</h1>
-    <p>A clear place to understand shared expenses.</p>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow"><span aria-hidden="true">✦</span> BETTER TOGETHER</p>
+      <h1>Share the moments.<br><span>Split the costs.</span></h1>
+      <p class="hero-description">A clear place to understand shared expenses. Spend less time doing the maths and more time enjoying life together.</p>
+      <div class="hero-actions">
     {% if g.current_user %}
-      <p><a href="{{ url_for('rooms.index') }}">Go to your rooms</a></p>
+        <a class="button button-primary" href="{{ url_for('rooms.index') }}">Go to your events <span aria-hidden="true">→</span></a>
     {% else %}
-      <p><a href="{{ url_for('auth.register') }}">Create an account</a></p>
-      <p><a href="{{ url_for('auth.sign_in') }}">Sign in</a></p>
+        <a class="button button-primary" href="{{ url_for('auth.register') }}">Create an account <span aria-hidden="true">→</span></a>
+        <a class="button button-secondary" href="{{ url_for('auth.sign_in') }}">Sign in</a>
     {% endif %}
+      </div>
+      <div class="hero-note">
+        <span class="note-icon" aria-hidden="true">✓</span>
+        <span>Simple, shared, and easy to keep track of.</span>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="art-label"><span class="art-dot"></span> A LITTLE MORE BALANCE</div>
+      <svg class="people-art" viewBox="0 0 560 440" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="282" cy="216" r="172" fill="#e1dafa"/>
+        <circle cx="126" cy="102" r="13" fill="#ffbf9b"/>
+        <circle cx="442" cy="111" r="9" fill="#eebb68"/>
+        <path d="M75 328c62-21 124-17 182-1 67 19 146 19 222-5" fill="none" stroke="#9785c6" stroke-width="3" stroke-linecap="round"/>
+        <rect x="176" y="286" width="216" height="19" rx="9.5" fill="#815b45"/>
+        <path d="M197 305l-19 62m187-62 19 62" fill="none" stroke="#815b45" stroke-width="10" stroke-linecap="round"/>
+        <path d="M119 292c-4-48 12-81 48-86 36-4 60 22 62 86z" fill="#ec8a70"/>
+        <path d="M132 235c-18 17-28 43-31 63m83-70 47 53" fill="none" stroke="#cf775f" stroke-width="15" stroke-linecap="round"/>
+        <circle cx="170" cy="181" r="37" fill="#d99b76"/>
+        <path d="M133 182c-6-44 20-62 51-51 19 6 25 26 23 43-15-2-29-10-37-22-7 16-21 25-37 30z" fill="#433436"/>
+        <path d="M338 292c-1-52 17-83 53-83 38 0 55 31 52 83z" fill="#71998a"/>
+        <path d="M367 225l-37 58m87-59c17 18 26 41 29 66" fill="none" stroke="#5d887a" stroke-width="15" stroke-linecap="round"/>
+        <circle cx="391" cy="182" r="36" fill="#e4b58f"/>
+        <path d="M356 179c-6-33 9-54 35-54 30 0 42 21 37 53-6-6-12-19-13-28-13 12-34 20-59 19z" fill="#65463b"/>
+        <path d="M235 286c0-48 13-75 45-75 33 0 46 27 46 75z" fill="#d8a749"/>
+        <circle cx="280" cy="186" r="30" fill="#ad7258"/>
+        <path d="M250 183c-3-31 12-47 32-47 20 0 31 18 28 44-16-2-30-10-38-22-3 10-11 20-22 25z" fill="#2f2b34"/>
+        <path d="M207 282h45m57 0h43" fill="none" stroke="#fff4e8" stroke-width="7" stroke-linecap="round"/>
+        <rect x="250" y="264" width="60" height="22" rx="5" fill="#fffaf4"/>
+        <path d="M273 264v-11c0-8 13-8 13 0v11" fill="none" stroke="#fffaf4" stroke-width="4"/>
+        <path d="M103 158l5-13 5 13 13 5-13 5-5 13-5-13-13-5zm333 56 4-10 4 10 10 4-10 4-4 10-4-10-10-4z" fill="#fff7ec"/>
+      </svg>
+      <div class="art-caption"><span class="art-caption-icon">♥</span><span><strong>Good company,</strong><br>clearer shared costs.</span></div>
+    </div>
+  </section>
+  <section class="features" aria-label="How RoomSplit helps">
+    <div class="feature"><span class="feature-icon feature-icon-peach" aria-hidden="true">↗</span><div><h2>Bring your people</h2><p>Create an event and invite your group.</p></div></div>
+    <div class="feature"><span class="feature-icon feature-icon-lavender" aria-hidden="true">€</span><div><h2>Keep track together</h2><p>Record shared expenses in one place.</p></div></div>
+    <div class="feature"><span class="feature-icon feature-icon-mint" aria-hidden="true">≈</span><div><h2>See the whole picture</h2><p>Understand balances at a glance.</p></div></div>
   </section>
 {% endblock %}

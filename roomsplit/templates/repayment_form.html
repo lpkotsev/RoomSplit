@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{% if repayment %}Edit repayment{% else %}Record repayment{% endif %} · RoomSplit{% endblock %}
 {% block content %}
-  <section>
+  <section class="card form-card">
+    <p class="eyebrow">YOUR EVENT</p>
     <h1>{% if repayment %}Edit repayment{% else %}Record a repayment{% endif %}</h1>
+    <p>Record a payment made between members to update their balances. RoomSplit does not transfer money.</p>
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
     <form action="{% if repayment %}{{ url_for('repayments.edit_repayment', room_id=room.id, repayment_id=repayment.id) }}{% else %}{{ url_for('repayments.new_repayment', room_id=room.id) }}{% endif %}"
           method="post">
@@ -27,13 +29,14 @@
       <label for="amount">Amount (EUR)</label>
       <input id="amount" name="amount" type="number" min="0.01" step="0.01"
              value="{{ values.get('amount', '') }}" required>
-      <label for="date">Date</label>
+      <label for="date">Date (optional)</label>
       <input id="date" name="date" type="date"
-             value="{{ values.get('date', '') }}" required>
+             value="{{ values.get('date', '') }}" aria-describedby="date-help">
+      <p id="date-help">Leave blank to use today's date.</p>
       <label for="note">Note (optional)</label>
       <input id="note" name="note" value="{{ values.get('note', '') }}">
       <button type="submit">{% if repayment %}Save repayment{% else %}Record repayment{% endif %}</button>
     </form>
-    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to room</a></p>
+    <p><a href="{{ url_for('rooms.section', room_id=room.id, section='repayments') }}">Back to repayments</a></p>
   </section>
 {% endblock %}

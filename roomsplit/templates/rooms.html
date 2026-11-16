@@ -1,35 +1,45 @@
 {% extends "base.html" %}
-{% block title %}My rooms · RoomSplit{% endblock %}
+{% block title %}My events · RoomSplit{% endblock %}
 {% block content %}
-  <section>
-    <h1>My rooms</h1>
+  <section class="page-intro">
+    <p class="eyebrow">YOUR SHARED SPACES</p>
+    <h1>My events</h1>
+    <p>Keep everyone on the same page, one event at a time.</p>
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
     {% if rooms %}
       <ul>
         {% for room in rooms %}
-          <li><a href="{{ url_for('rooms.show', room_id=room.id) }}">Room {{ room.code }}</a></li>
+          <li><a href="{{ url_for('rooms.show', room_id=room.id) }}">{{ room.name }}</a></li>
         {% endfor %}
       </ul>
     {% else %}
-      <p>You have not joined a room yet. Create one or join with a room code below.</p>
+      <p>You have not joined an event yet. Create one or join with an event hashcode below.</p>
     {% endif %}
   </section>
-  <section>
-    <h2>Create a room</h2>
+  <div class="card-grid">
+  <section class="card">
+    <span class="section-icon feature-icon-lavender" aria-hidden="true">+</span>
+    <h2>Create an event</h2>
+    <p>Start a new space for your shared expenses.</p>
     <form action="{{ url_for('rooms.create') }}" method="post">
-      <label for="new-room-password">Room password</label>
+      <label for="event-name">Event name</label>
+      <input id="event-name" name="name" value="{{ event_name }}" required>
+      <label for="new-room-password">Event password</label>
       <input id="new-room-password" name="password" type="password" required>
-      <button type="submit">Create room</button>
+      <button type="submit">Create event</button>
     </form>
   </section>
-  <section>
-    <h2>Join a room by code</h2>
+  <section class="card">
+    <span class="section-icon feature-icon-peach" aria-hidden="true">→</span>
+    <h2>Join an event</h2>
+    <p>Have an invite? Enter the event hashcode and password.</p>
     <form action="{{ url_for('rooms.join_by_code') }}" method="post">
-      <label for="room-code">Room code</label>
+      <label for="room-code">Event hashcode</label>
       <input id="room-code" name="room_code" required>
-      <label for="room-password">Room password</label>
+      <label for="room-password">Event password</label>
       <input id="room-password" name="password" type="password" required>
-      <button type="submit">Join room</button>
+      <button type="submit">Join event</button>
     </form>
   </section>
+  </div>
 {% endblock %}

@@ -19,7 +19,7 @@ You are the RoomSplit planning and architecture specialist. Inspect the project 
 1. Read `docs/project-brief.md` before making recommendations.
 2. Identify the main responsibilities and how data flows between them.
 3. Note relevant dependencies and existing project conventions, distinguishing evidence from proposal.
-4. Call out `OPEN` decisions that affect the design, especially room roles, refund edit/delete permissions, and exact rounding/remainder behavior.
+4. Call out `OPEN` decisions that affect the design, especially room roles and exact rounding/remainder behavior.
 5. If asked for a plan, provide only the requested level of detail; otherwise, report the architecture findings without creating a plan.
 
 ## Output

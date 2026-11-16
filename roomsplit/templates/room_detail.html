@@ -1,132 +1,52 @@
 {% extends "base.html" %}
-{% block title %}Room {{ room.code }} · RoomSplit{% endblock %}
+{% block title %}{{ room.name }} · RoomSplit{% endblock %}
 {% block content %}
-  <section>
-    <h1>Room {{ room.code }}</h1>
+  <section class="card room-detail">
+    <p class="eyebrow">YOUR SHARED SPACE</p>
+    <h1>{{ room.name }}</h1>
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
-    <p>Room code: <code>{{ room.code }}</code></p>
+    <p>Event hashcode: <code>{{ room.code }}</code></p>
     <p>Invite link: <a href="{{ invite_url }}">{{ invite_url }}</a></p>
+    <nav class="room-actions" aria-label="Event actions">
+      <a class="button button-primary" href="{{ url_for('dashboard.show', room_id=room.id) }}">Dashboard</a>
+      <a class="button button-secondary" href="{{ url_for('expenses.new_expense', room_id=room.id) }}">Add expense</a>
+      <a class="button button-secondary" href="{{ url_for('repayments.new_repayment', room_id=room.id) }}">Record repayment</a>
+    </nav>
+    <nav class="section-nav" aria-label="Event sections">
+      {% for key, label in [('members', 'Members'), ('expenses', 'Expenses'), ('repayments', 'Repayments'), ('balances', 'Member balances')] %}
+        <a class="button button-secondary{% if section == key %} section-current{% endif %}"
+           href="{{ url_for('rooms.section', room_id=room.id, section=key) }}"
+           {% if section == key %}aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    {% if section == 'members' %}
     <h2>Members</h2>
     <ul>
       {% for member in members %}
-        <li>
-          {{ member.username }}
-          {% if member.id == room.owner_id %}(owner){% endif %}
-          {% if member.id == room.administrator_id %}(administrator){% endif %}
+        <li class="member-row">
+          <span>
+            {{ member.username }}
+            {% if member.id == room.owner_id %}(owner){% endif %}
+            {% if member.id == room.administrator_id %}(administrator){% endif %}
+          </span>
           {% if is_manager
                 and member.id != room.owner_id
                 and member.id != room.administrator_id %}
             <form action="{{ url_for('rooms.remove_member', room_id=room.id, member_id=member.id) }}"
                   method="post">
-              <button type="submit">Remove {{ member.username }}</button>
+              <button class="record-action action-delete" type="submit"
+                      aria-label="Remove {{ member.username }}">Delete</button>
             </form>
           {% endif %}
         </li>
       {% endfor %}
     </ul>
-    <p>
-      <a href="{{ url_for('dashboard.show', room_id=room.id) }}">Dashboard</a>
-      · <a href="{{ url_for('categories.index', room_id=room.id) }}">Manage categories</a>
-      · <a href="{{ url_for('expenses.new_expense', room_id=room.id) }}">Add expense</a>
-      · <a href="{{ url_for('repayments.new_repayment', room_id=room.id) }}">Record repayment</a>
-      · <a href="{{ url_for('refunds.new_refund', room_id=room.id) }}">Record refund</a>
-    </p>
-    <h2>Categories</h2>
-    {% if categories %}
-      <ul>
-        {% for category in categories %}
-          <li>{{ category.name }}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>
-        No categories have been created for this room.
-        <a href="{{ url_for('categories.index', room_id=room.id) }}">Create your first category</a>.
-      </p>
-    {% endif %}
-    <h2>Expenses</h2>
-    {% if expenses %}
-      <ul>
-        {% for expense in expenses %}
-          <li>
-            <strong>{{ expense.item }}</strong> · EUR {{ expense.amount }}
-            · {{ expense.expense_date.isoformat() }}
-            · {% for category in categories if category.id == expense.category_id %}
-                {{ category.name }}
-              {% endfor %}
-            · {{ expense.split_type }} split
-            <ul>
-              {% for payer in expense.payers %}
-                {% if accounts.get(payer.member_id) %}
-                  <li>{{ accounts[payer.member_id].username }} paid EUR {{ payer.amount }}</li>
-                {% endif %}
-              {% endfor %}
-              {% if expense.custom_shares %}
-                {% for member_id, share in expense.custom_shares.items() %}
-                  {% if accounts.get(member_id) %}
-                    <li>{{ accounts[member_id].username }} share: EUR {{ share }}</li>
-                  {% endif %}
-                {% endfor %}
-              {% endif %}
-            </ul>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>
-        No expenses have been recorded for this room.
-        <a href="{{ url_for('expenses.new_expense', room_id=room.id) }}">Record your first expense</a>.
-      </p>
-    {% endif %}
-    <h2>Repayments</h2>
-    {% if repayments %}
-      <ul>
-        {% for repayment in repayments %}
-          <li>
-            {{ accounts[repayment.payer_id].username }} paid
-            {{ accounts[repayment.recipient_id].username }} EUR {{ repayment.amount }}
-            on {{ repayment.repayment_date.isoformat() }}
-            {% if repayment.note %}· {{ repayment.note }}{% endif %}
-            {% if is_manager %}
-              · <a href="{{ url_for('repayments.edit_repayment', room_id=room.id, repayment_id=repayment.id) }}">Edit</a>
-              <form action="{{ url_for('repayments.delete_repayment', room_id=room.id, repayment_id=repayment.id) }}"
-                    method="post">
-                <button type="submit">Delete repayment</button>
-              </form>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No repayments have been recorded for this room.</p>
-    {% endif %}
-    <h2>Refunds</h2>
-    {% if refunds %}
-      <ul>
-        {% for refund in refunds %}
-          <li>
-            EUR {{ refund.amount }} on {{ refund.refund_date.isoformat() }}
-            {% if refund.expense_id %}· linked to an expense{% else %}· unlinked{% endif %}
-            {% if refund.note %}· {{ refund.note }}{% endif %}
-            {% if refund.created_by == g.current_user.id %}
-              · <a href="{{ url_for('refunds.edit_refund', room_id=room.id, refund_id=refund.id) }}">Edit</a>
-              <form action="{{ url_for('refunds.delete_refund', room_id=room.id, refund_id=refund.id) }}"
-                    method="post">
-                <button type="submit">Delete refund</button>
-              </form>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No refunds have been recorded for this room.</p>
-    {% endif %}
     {% if g.current_user.id == room.owner_id and room.administrator_id is none %}
       {% if candidates %}
         <h2>Appoint an administrator</h2>
         <form action="{{ url_for('rooms.appoint_administrator', room_id=room.id) }}"
               method="post">
-          <label for="administrator">Room member</label>
+          <label for="administrator">Event member</label>
           <select id="administrator" name="member_id" required>
             {% for candidate in candidates %}
               <option value="{{ candidate.id }}">{{ candidate.username }}</option>
@@ -135,14 +55,101 @@
           <button type="submit">Appoint administrator</button>
         </form>
       {% else %}
-        <p>Another member must join before you can appoint an administrator.</p>
+        <p>No event members are available to appoint.</p>
       {% endif %}
     {% endif %}
     {% if g.current_user.id != room.owner_id
           and g.current_user.id != room.administrator_id %}
       <form action="{{ url_for('rooms.leave', room_id=room.id) }}" method="post">
-        <button type="submit">Leave room</button>
+        <button type="submit">Leave event</button>
       </form>
+    {% endif %}
+    {% elif section == 'expenses' %}
+    <h2>Expenses</h2>
+    {% if expenses %}
+      <ul>
+        {% for expense in expenses %}
+          <li class="record-row">
+            <div class="record-details">
+              <strong>{{ expense.item }}</strong> · EUR {{ expense.amount }}
+              · {{ expense.expense_date.isoformat() }}
+              · {% for category in categories if category.id == expense.category_id %}
+                  {{ category.name }}
+                {% endfor %}
+              · {{ expense.split_type }} split
+              · Created by: {{ accounts[expense.created_by].username if expense.created_by in accounts else "Unknown member" }}
+              <ul>
+                {% for payer in expense.payers %}
+                  {% if accounts.get(payer.member_id) %}
+                    <li>{{ accounts[payer.member_id].username }} paid EUR {{ payer.amount }}</li>
+                  {% endif %}
+                {% endfor %}
+                {% if expense.custom_shares %}
+                  {% for member_id, share in expense.custom_shares.items() %}
+                    {% if accounts.get(member_id) %}
+                      <li>{{ accounts[member_id].username }} share: EUR {{ share }}</li>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              </ul>
+            </div>
+            {% if can_manage_record(g.current_user.id, room, expense.created_by) %}
+              <div class="record-actions">
+                <a class="record-action action-edit"
+                   href="{{ url_for('expenses.edit_expense', room_id=room.id, expense_id=expense.id) }}"
+                   aria-label="Edit expense {{ expense.item }}">Edit</a>
+                <form action="{{ url_for('expenses.delete_expense', room_id=room.id, expense_id=expense.id) }}"
+                      method="post">
+                  <button class="record-action action-delete" type="submit"
+                          aria-label="Delete expense {{ expense.item }}">Delete</button>
+                </form>
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>
+        No expenses have been recorded for this event.
+        <a href="{{ url_for('expenses.new_expense', room_id=room.id) }}">Record your first expense</a>.
+      </p>
+    {% endif %}
+    {% elif section == 'repayments' %}
+    <h2>Repayments</h2>
+    {% if repayments %}
+      <ul>
+        {% for repayment in repayments %}
+          <li class="record-row">
+            <div class="record-details">
+              {{ accounts[repayment.payer_id].username }} paid
+              {{ accounts[repayment.recipient_id].username }} EUR {{ repayment.amount }}
+              on {{ repayment.repayment_date.isoformat() }}
+              {% if repayment.note %}· {{ repayment.note }}{% endif %}
+              · Created by: {{ accounts[repayment.created_by].username if repayment.created_by in accounts else "Unknown member" }}
+            </div>
+            {% if can_manage_record(g.current_user.id, room, repayment.created_by) %}
+              <div class="record-actions">
+                <a class="record-action action-edit"
+                   href="{{ url_for('repayments.edit_repayment', room_id=room.id, repayment_id=repayment.id) }}"
+                   aria-label="Edit repayment from {{ accounts[repayment.payer_id].username }} to {{ accounts[repayment.recipient_id].username }}">Edit</a>
+                <form action="{{ url_for('repayments.delete_repayment', room_id=room.id, repayment_id=repayment.id) }}"
+                      method="post">
+                  <button class="record-action action-delete" type="submit"
+                          aria-label="Delete repayment from {{ accounts[repayment.payer_id].username }} to {{ accounts[repayment.recipient_id].username }}">Delete</button>
+                </form>
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No repayments have been recorded for this event.</p>
+    {% endif %}
+    {% elif section == 'balances' %}
+      <p>Showing balances for all dates. Use the dashboard to filter by date.</p>
+      {% include "_member_balances.html" %}
+    {% else %}
+      <p>Choose a section to see your event details.</p>
     {% endif %}
   </section>
 {% endblock %}

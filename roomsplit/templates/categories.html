@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Categories · RoomSplit{% endblock %}
 {% block content %}
-  <section>
-    <h1>Categories for room {{ room.code }}</h1>
+  <section class="card form-card">
+    <p class="eyebrow">YOUR EVENT</p>
+    <h1>Categories for {{ room.name }}</h1>
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
     <ul>
       {% for category in categories %}
@@ -17,6 +18,6 @@
       <input id="category-name" name="name" required>
       <button type="submit">Create category</button>
     </form>
-    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to room</a></p>
+    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to event</a></p>
   </section>
 {% endblock %}

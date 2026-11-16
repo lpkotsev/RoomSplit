@@ -1,5 +1,4 @@
 import secrets
-from datetime import date
 
 from flask import (
     Blueprint,
@@ -13,9 +12,10 @@ from flask import (
 
 from .auth import login_required
 from .balances import repayment_capacity, validate_repayment_history
+from .dates import parse_optional_date
 from .models import RepaymentRecord, RoomRecord
 from .money import parse_amount
-from .permissions import is_room_manager
+from .permissions import can_manage_record
 from .room_access import get_room_or_404, get_storage, require_room_member
 from .splits import ZERO
 
@@ -44,14 +44,6 @@ def _room_expenses(room_id: str):
         expense
         for expense in get_storage().expenses.values()
         if expense.room_id == room_id
-    ]
-
-
-def _room_refunds(room_id: str):
-    return [
-        refund
-        for refund in get_storage().refunds.values()
-        if refund.room_id == room_id
     ]
 
 
@@ -120,13 +112,13 @@ def _parse_repayment(
         or recipient_id not in allowed_member_ids
         or payer_id == recipient_id
     ):
-        return None, "Choose two different members of this room."
+        return None, "Choose two different members of this event."
 
     amount = parse_amount(form.get("amount", ""))
     if amount is None or amount <= ZERO:
         return None, "Enter a positive amount with no more than two decimal places."
     try:
-        repayment_date = date.fromisoformat(form.get("date", ""))
+        repayment_date = parse_optional_date(form.get("date", ""))
     except ValueError:
         return None, "Enter a valid repayment date."
 
@@ -165,7 +157,6 @@ def _parse_repayment(
         balances = validate_repayment_history(
             _room_expenses(room.id),
             room.member_ids,
-            _room_refunds(room.id),
             ordered[:candidate_index],
         )
     except ValueError:
@@ -178,7 +169,6 @@ def _parse_repayment(
         validate_repayment_history(
             _room_expenses(room.id),
             room.member_ids,
-            _room_refunds(room.id),
             ordered,
         )
     except ValueError:
@@ -201,7 +191,7 @@ def new_repayment(room_id: str):
     if error:
         return _render_form(room, error=error, status=400, values=request.form)
     get_storage().repayments[repayment.id] = repayment
-    return redirect(url_for("rooms.show", room_id=room.id))
+    return redirect(url_for("rooms.section", room_id=room.id, section="repayments"))
 
 
 @repayments_blueprint.route(
@@ -212,9 +202,9 @@ def new_repayment(room_id: str):
 def edit_repayment(room_id: str, repayment_id: str):
     room = get_room_or_404(room_id)
     require_room_member(room)
-    if not is_room_manager(g.current_user.id, room):
-        abort(403)
     repayment = _get_room_repayment(room_id, repayment_id)
+    if not can_manage_record(g.current_user.id, room, repayment.created_by):
+        abort(403)
     if request.method == "GET":
         return _render_form(room, repayment=repayment)
 
@@ -228,7 +218,7 @@ def edit_repayment(room_id: str, repayment_id: str):
             values=request.form,
         )
     get_storage().repayments[repayment.id] = updated
-    return redirect(url_for("rooms.show", room_id=room.id))
+    return redirect(url_for("rooms.section", room_id=room.id, section="repayments"))
 
 
 @repayments_blueprint.post(
@@ -238,9 +228,9 @@ def edit_repayment(room_id: str, repayment_id: str):
 def delete_repayment(room_id: str, repayment_id: str):
     room = get_room_or_404(room_id)
     require_room_member(room)
-    if not is_room_manager(g.current_user.id, room):
-        abort(403)
     repayment = _get_room_repayment(room_id, repayment_id)
+    if not can_manage_record(g.current_user.id, room, repayment.created_by):
+        abort(403)
     remaining = [
         item
         for item in _room_repayments(room.id)
@@ -250,7 +240,6 @@ def delete_repayment(room_id: str, repayment_id: str):
         validate_repayment_history(
             _room_expenses(room.id),
             room.member_ids,
-            _room_refunds(room.id),
             remaining,
         )
     except ValueError:
@@ -261,4 +250,4 @@ def delete_repayment(room_id: str, repayment_id: str):
             status=409,
         )
     del get_storage().repayments[repayment.id]
-    return redirect(url_for("rooms.show", room_id=room.id))
+    return redirect(url_for("rooms.section", room_id=room.id, section="repayments"))

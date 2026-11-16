@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Room {{ room.code }} dashboard · RoomSplit{% endblock %}
+{% block title %}{{ room.name }} dashboard · RoomSplit{% endblock %}
 {% block content %}
-  <section class="dashboard" aria-labelledby="dashboard-title">
-    <h1 id="dashboard-title">Room dashboard</h1>
-    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to room {{ room.code }}</a></p>
+  <section class="dashboard card" aria-labelledby="dashboard-title">
+    <p class="eyebrow">YOUR EVENT AT A GLANCE</p>
+    <h1 id="dashboard-title">{{ room.name }} dashboard</h1>
+    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to {{ room.name }}</a></p>
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
     <form class="dashboard-filter" method="get" aria-label="Filter dashboard by date">
       <label for="start-date">From</label>
@@ -41,30 +42,7 @@
       {% endif %}
     </section>
 
-    <section aria-labelledby="balance-heading">
-      <h2 id="balance-heading">Member balances</h2>
-      {% if has_balance_activity %}
-        <p>Positive balances are owed to that member; negative balances mean that member owes.</p>
-      {% else %}
-        <p>No balance activity in this date range.</p>
-      {% endif %}
-      {% if balance_rows %}
-        <ul class="bar-list" aria-label="Member balances">
-          {% for row in balance_rows %}
-            <li class="bar-row">
-              <span class="bar-label">
-                {{ row.name }}{% if not row.is_current_member %} (former member){% endif %}
-              </span>
-              <div class="bar-track" role="img"
-                   aria-label="{{ row.name }}: {{ row.balance_label }} EUR {{ row.amount_display }}">
-                <span class="bar-fill{% if row.negative %} negative{% endif %}"
-                      style="width: {{ row.bar_width }}%"></span>
-              </div>
-              <span class="bar-value">{{ row.balance_label }} EUR {{ row.amount_display }}</span>
-            </li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    </section>
+    {% set filtered_balances = true %}
+    {% include "_member_balances.html" %}
   </section>
 {% endblock %}

@@ -4,6 +4,11 @@
 
 This plan is for the local student demo. The requirements source of truth is [the project brief](./project-brief.md), alongside [Copilot instructions](../.github/copilot-instructions.md). Module boundaries in [the architecture draft](./architecture-draft.md) are proposals unless confirmed there or below.
 
+This is a historical phase plan. Later approved changes in the project brief
+supersede it: refunds have been removed, expenses support equal or custom splits,
+expense and repayment dates are optional, and administrator and record-editing
+permissions follow the current brief.
+
 ## Approved technical decisions
 
 - Use Flask with Jinja templates.

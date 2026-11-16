@@ -56,9 +56,6 @@ def _dashboard_rows(
         for expense in room_expenses
         if _in_date_range(expense.expense_date, start, end)
     ]
-    expenses_by_id = {expense.id: expense for expense in room_expenses}
-    expense_ids_in_range = {expense.id for expense in expenses_in_range}
-
     category_totals: dict[str, Decimal] = {}
     categories_with_activity: set[str] = set()
     for expense in expenses_in_range:
@@ -66,24 +63,6 @@ def _dashboard_rows(
             category_totals.get(expense.category_id, ZERO) + expense.amount
         )
         categories_with_activity.add(expense.category_id)
-
-    refunds_in_range = [
-        refund
-        for refund in storage.refunds.values()
-        if refund.room_id == room.id
-        and _in_date_range(refund.refund_date, start, end)
-    ]
-    for refund in refunds_in_range:
-        if refund.expense_id is None:
-            continue
-        original_expense = expenses_by_id.get(refund.expense_id)
-        if original_expense is None:
-            continue
-        category_totals[original_expense.category_id] = (
-            category_totals.get(original_expense.category_id, ZERO)
-            - refund.amount
-        )
-        categories_with_activity.add(original_expense.category_id)
 
     categories = [
         category
@@ -118,16 +97,10 @@ def _dashboard_rows(
         if repayment.room_id == room.id
         and _in_date_range(repayment.repayment_date, start, end)
     ]
-    linked_refunds_for_balances = [
-        refund
-        for refund in refunds_in_range
-        if refund.expense_id in expense_ids_in_range
-    ]
     balances = calculate_room_balances(
         expenses_in_range,
         room.member_ids,
         repayments_in_range,
-        linked_refunds_for_balances,
     )
     max_balance = max((abs(amount) for amount in balances.values()), default=ZERO)
     balance_rows = []
@@ -157,7 +130,7 @@ def _dashboard_rows(
         category_rows,
         balance_rows,
         bool(categories_with_activity),
-        bool(expenses_in_range or repayments_in_range or linked_refunds_for_balances),
+        bool(expenses_in_range or repayments_in_range),
     )
 
 

@@ -8,7 +8,6 @@ from .categories import categories_blueprint
 from .dashboard import dashboard_blueprint
 from .expenses import expenses_blueprint
 from .models import AccountRecord
-from .refunds import refunds_blueprint
 from .repayments import repayments_blueprint
 from .rooms import rooms_blueprint
 from .storage import RuntimeStorage
@@ -32,7 +31,6 @@ def create_app(test_config=None):
     app.register_blueprint(categories_blueprint)
     app.register_blueprint(dashboard_blueprint)
     app.register_blueprint(expenses_blueprint)
-    app.register_blueprint(refunds_blueprint)
     app.register_blueprint(repayments_blueprint)
     app.register_blueprint(rooms_blueprint)
 

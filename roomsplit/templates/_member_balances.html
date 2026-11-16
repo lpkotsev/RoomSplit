@@ -1,0 +1,25 @@
+<section aria-labelledby="balance-heading">
+  <h2 id="balance-heading">Member balances</h2>
+  {% if has_balance_activity %}
+    <p>Positive balances are owed to that member; negative balances mean that member owes.</p>
+  {% else %}
+    <p>No balance activity{% if filtered_balances %} in this date range{% endif %}.</p>
+  {% endif %}
+  {% if balance_rows %}
+    <ul class="bar-list" aria-label="Member balances">
+      {% for row in balance_rows %}
+        <li class="bar-row">
+          <span class="bar-label">
+            {{ row.name }}{% if not row.is_current_member %} (former member){% endif %}
+          </span>
+          <div class="bar-track" role="img"
+               aria-label="{{ row.name }}: {{ row.balance_label }} EUR {{ row.amount_display }}">
+            <span class="bar-fill{% if row.negative %} negative{% endif %}"
+                  style="width: {{ row.bar_width }}%"></span>
+          </div>
+          <span class="bar-value">{{ row.balance_label }} EUR {{ row.amount_display }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>

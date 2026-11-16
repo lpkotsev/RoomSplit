@@ -18,7 +18,7 @@ class PhaseSevenAcceptanceTests(unittest.TestCase):
         self.owner, self.owner_id = self.create_user("owner")
         created = self.owner.post(
             "/rooms/create",
-            data={"password": "room-password"},
+            data={"name": "Shared event", "password": "room-password"},
         )
         self.assertEqual(created.status_code, 302)
         self.room = next(iter(self.storage.rooms.values()))
@@ -109,71 +109,30 @@ class PhaseSevenAcceptanceTests(unittest.TestCase):
             },
         )
 
-        custom_expense = self.create_expense(
+        travel_expense = self.create_expense(
             {
                 "item": "Train tickets",
                 "amount": "6.00",
                 "date": "2026-08-04",
                 "category_id": travel.id,
-                "split_type": "custom",
+                "split_type": "equal",
                 f"payer_{self.owner_id}": "6.00",
-                f"share_{self.owner_id}": "1.00",
-                f"share_{self.administrator_id}": "5.00",
             }
         )
         self.assertEqual(
-            custom_expense.custom_shares,
+            calculate_expense_shares(travel_expense),
             {
-                self.owner_id: Decimal("1.00"),
-                self.administrator_id: Decimal("5.00"),
+                self.owner_id: Decimal("3.00"),
+                self.administrator_id: Decimal("3.00"),
             },
         )
         self.assertEqual(
-            sum(custom_expense.custom_shares.values(), Decimal("0.00")),
-            custom_expense.amount,
+            sum(calculate_expense_shares(travel_expense).values(), Decimal("0.00")),
+            travel_expense.amount,
         )
         self.assertEqual(
-            custom_expense.participant_ids,
+            travel_expense.participant_ids,
             frozenset({self.owner_id, self.administrator_id}),
-        )
-
-        linked_refund = self.administrator.post(
-            f"/rooms/{self.room.id}/refunds/new",
-            data={
-                "expense_id": equal_expense.id,
-                "amount": "2.00",
-                "date": "2026-08-05",
-                "note": "Synthetic linked refund",
-                f"payer_{self.owner_id}": "2.00",
-            },
-        )
-        self.assertEqual(linked_refund.status_code, 302)
-
-        balances_before_unlinked_refund = calculate_room_balances(
-            self.storage.expenses.values(),
-            member_ids=self.room.member_ids,
-            repayments=self.storage.repayments.values(),
-            refunds=self.storage.refunds.values(),
-        )
-        unlinked_refund = self.administrator.post(
-            f"/rooms/{self.room.id}/refunds/new",
-            data={
-                "expense_id": "",
-                "amount": "9.00",
-                "date": "2026-08-05",
-                "note": "Synthetic unlinked refund",
-            },
-        )
-        self.assertEqual(unlinked_refund.status_code, 302)
-        balances_after_unlinked_refund = calculate_room_balances(
-            self.storage.expenses.values(),
-            member_ids=self.room.member_ids,
-            repayments=self.storage.repayments.values(),
-            refunds=self.storage.refunds.values(),
-        )
-        self.assertEqual(
-            balances_after_unlinked_refund,
-            balances_before_unlinked_refund,
         )
 
         repayment = self.administrator.post(
@@ -191,13 +150,12 @@ class PhaseSevenAcceptanceTests(unittest.TestCase):
             self.storage.expenses.values(),
             member_ids=self.room.member_ids,
             repayments=self.storage.repayments.values(),
-            refunds=self.storage.refunds.values(),
         )
         self.assertEqual(
             balances,
             {
-                self.owner_id: Decimal("7.00"),
-                self.administrator_id: Decimal("-7.00"),
+                self.owner_id: Decimal("6.00"),
+                self.administrator_id: Decimal("-6.00"),
             },
         )
         self.assertEqual(sum(balances.values(), Decimal("0.00")), Decimal("0.00"))
@@ -209,16 +167,17 @@ class PhaseSevenAcceptanceTests(unittest.TestCase):
         self.assertEqual(dashboard.status_code, 200)
         self.assertIn(b"Food", dashboard.data)
         self.assertIn(b"Travel", dashboard.data)
-        self.assertIn(b"EUR 8.00", dashboard.data)
+        self.assertIn(b"EUR 10.00", dashboard.data)
         self.assertIn(b"EUR 6.00", dashboard.data)
-        self.assertIn(b"Owed EUR 7.00", dashboard.data)
-        self.assertIn(b"Owes EUR 7.00", dashboard.data)
+        self.assertIn(b"Owed EUR 6.00", dashboard.data)
+        self.assertIn(b"Owes EUR 6.00", dashboard.data)
 
-        room_page = self.administrator.get(f"/rooms/{self.room.id}")
-        self.assertEqual(room_page.status_code, 200)
-        self.assertIn(b"Shared meal", room_page.data)
-        self.assertIn(b"Train tickets", room_page.data)
-        self.assertIn(b"Synthetic settlement", room_page.data)
+        expense_page = self.administrator.get(f"/rooms/{self.room.id}/expenses")
+        self.assertEqual(expense_page.status_code, 200)
+        self.assertIn(b"Shared meal", expense_page.data)
+        self.assertIn(b"Train tickets", expense_page.data)
+        repayment_page = self.administrator.get(f"/rooms/{self.room.id}/repayments")
+        self.assertIn(b"Synthetic settlement", repayment_page.data)
 
         outsider, _ = self.create_user("outsider")
         protected_pages = (
@@ -227,7 +186,6 @@ class PhaseSevenAcceptanceTests(unittest.TestCase):
             f"/rooms/{self.room.id}/categories",
             f"/rooms/{self.room.id}/expenses/new",
             f"/rooms/{self.room.id}/repayments/new",
-            f"/rooms/{self.room.id}/refunds/new",
         )
         for path in protected_pages:
             with self.subTest(path=path):
@@ -237,7 +195,6 @@ class PhaseSevenAcceptanceTests(unittest.TestCase):
             (f"/rooms/{self.room.id}/categories", {"name": "Private"}),
             (f"/rooms/{self.room.id}/expenses/new", {}),
             (f"/rooms/{self.room.id}/repayments/new", {}),
-            (f"/rooms/{self.room.id}/refunds/new", {}),
             (
                 f"/rooms/{self.room.id}/administrator",
                 {"member_id": outsider},

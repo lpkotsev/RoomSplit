@@ -1,80 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Add expense · RoomSplit{% endblock %}
+{% block title %}{% if expense %}Edit expense{% else %}Add expense{% endif %} · RoomSplit{% endblock %}
 {% block content %}
-  <section>
-    <h1>Add an expense to room {{ room.code }}</h1>
+  <section class="card form-card">
+    <p class="eyebrow">SHARED EXPENSES</p>
+    <h1>{% if expense %}Edit expense{% else %}Add an expense to {{ room.name }}{% endif %}</h1>
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
-    {% if categories %}
-      <form action="{{ url_for('expenses.new_expense', room_id=room.id) }}"
+      <form action="{% if expense %}{{ url_for('expenses.edit_expense', room_id=room.id, expense_id=expense.id) }}{% else %}{{ url_for('expenses.new_expense', room_id=room.id) }}{% endif %}"
             method="post">
         <label for="item">What was bought?</label>
         <input id="item" name="item" value="{{ values.get('item', '') }}" required>
         <label for="amount">Total (EUR)</label>
         <input id="amount" name="amount" type="number" min="0.01" step="0.01"
                value="{{ values.get('amount', '') }}" required>
-        <label for="expense-date">Date</label>
+        <label for="expense-date">Date (optional)</label>
         <input id="expense-date" name="date" type="date"
-               value="{{ values.get('date', '') }}" required>
+               value="{{ values.get('date', '') }}" aria-describedby="date-help">
+        <p id="date-help">Leave blank to use today's date.</p>
         <label for="category">Category</label>
-        <select id="category" name="category_id" required>
-          {% for category in categories %}
-            <option value="{{ category.id }}"
-                    {% if values.get('category_id') == category.id %}selected{% endif %}>
-              {{ category.name }}
-            </option>
+        <input id="category" name="category_name" list="category-suggestions"
+               value="{{ values.get('category_name', '') }}" autocomplete="off"
+               aria-describedby="category-help" required>
+        <datalist id="category-suggestions">
+          {% for name in category_names %}
+            <option value="{{ name }}">
           {% endfor %}
+        </datalist>
+        <p id="category-help">Start typing to see suggestions, or enter a new category.</p>
+        <label for="split-type">Split type</label>
+        <select id="split-type" name="split_type">
+          <option value="equal" {% if values.get('split_type', 'equal') == 'equal' %}selected{% endif %}>Equal split</option>
+          <option value="custom" {% if values.get('split_type') == 'custom' %}selected{% endif %}>Custom split</option>
         </select>
+        <p>Equal splits are shared among the expense participants. For a custom split, enter each participant's share below.</p>
+        {% if expense %}<p>Participants are those who belonged to the event when this expense was recorded.</p>{% endif %}
         <fieldset>
-          <legend>Split type</legend>
-          <label>
-            <input type="radio" name="split_type" value="equal"
-                   {% if values.get('split_type', 'equal') == 'equal' %}checked{% endif %}>
-            Equal
-          </label>
-          <label>
-            <input type="radio" name="split_type" value="custom"
-                   {% if values.get('split_type') == 'custom' %}checked{% endif %}>
-            Custom amounts
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Payer contributions (EUR)</legend>
-          <p>Leave a member’s field blank if they did not pay.</p>
+          <legend>Participant amounts (EUR)</legend>
+          <p>Leave an amount blank for zero. Contributions and custom shares must each add up to the total.</p>
           {% for member in members %}
-            {% set field = 'payer_' ~ member.id %}
-            <label for="{{ field }}">{{ member.username }}</label>
-            <input id="{{ field }}" name="{{ field }}" type="number"
-                   min="0" step="0.01" value="{{ values.get(field, '') }}">
+            <div class="participant-amounts">
+              <strong>{{ member.username }}</strong>
+              {% set payer_field = 'payer_' ~ member.id %}
+              <label for="{{ payer_field }}">{{ member.username }}: amount given</label>
+              <input id="{{ payer_field }}" name="{{ payer_field }}" type="number"
+                     min="0" step="0.01" value="{{ values.get(payer_field, '') }}">
+              {% set share_field = 'share_' ~ member.id %}
+              <div class="custom-share">
+                <label for="{{ share_field }}">{{ member.username }}: expense share</label>
+                <input id="{{ share_field }}" name="{{ share_field }}" type="number"
+                       min="0" step="0.01" value="{{ values.get(share_field, '') }}">
+              </div>
+            </div>
           {% endfor %}
         </fieldset>
-        <label for="remainder-payer">
-          Payer to receive any rounding remainder (equal split only)
-        </label>
-        <select id="remainder-payer" name="remainder_payer_id">
-          <option value="">Choose a payer</option>
-          {% for member in members %}
-            <option value="{{ member.id }}"
-                    {% if values.get('remainder_payer_id') == member.id %}selected{% endif %}>
-              {{ member.username }}
-            </option>
-          {% endfor %}
-        </select>
-        <fieldset>
-          <legend>Custom shares (EUR)</legend>
-          <p>Enter a nonnegative amount for every member when using a custom split; use 0.00 when needed.</p>
-          {% for member in members %}
-            {% set field = 'share_' ~ member.id %}
-            <label for="{{ field }}">{{ member.username }}</label>
-            <input id="{{ field }}" name="{{ field }}" type="number"
-                   min="0" step="0.01" value="{{ values.get(field, '') }}">
-          {% endfor %}
-        </fieldset>
-        <button type="submit">Record expense</button>
+        {% if tied_payers %}
+          <label for="remainder-payer">Tied highest payer to receive any rounding remainder</label>
+          <select id="remainder-payer" name="remainder_payer_id" required>
+            <option value="">Choose a highest payer</option>
+            {% for member in tied_payers %}
+              <option value="{{ member.id }}"
+                      {% if values.get('remainder_payer_id') == member.id %}selected{% endif %}>
+                {{ member.username }}
+              </option>
+            {% endfor %}
+          </select>
+        {% elif values.get('remainder_payer_id') %}
+          <input type="hidden" name="remainder_payer_id" value="{{ values.get('remainder_payer_id') }}">
+        {% endif %}
+        <button type="submit">{% if expense %}Save expense{% else %}Record expense{% endif %}</button>
       </form>
-    {% else %}
-      <p>Create a category before recording an expense.</p>
-    {% endif %}
-    <p><a href="{{ url_for('categories.index', room_id=room.id) }}">Manage categories</a></p>
-    <p><a href="{{ url_for('rooms.show', room_id=room.id) }}">Back to room</a></p>
+    <p><a href="{{ url_for('rooms.section', room_id=room.id, section='expenses') }}">Back to expenses</a></p>
+    <script src="{{ url_for('static', filename='category-suggestions.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='expense-split.js') }}" defer></script>
   </section>
 {% endblock %}

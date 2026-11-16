@@ -7,20 +7,33 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   </head>
   <body>
-    <main>
-      <header>
-        <a href="{{ url_for('index') }}"><strong>RoomSplit</strong></a>
-        {% if g.current_user %}
-          <nav aria-label="Account">
-            <a href="{{ url_for('rooms.index') }}">My rooms</a>
-            <span>Signed in as {{ g.current_user.username }}</span>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="{{ url_for('index') }}">
+          <span class="brand-mark" aria-hidden="true">R<span>.</span></span>
+          <strong>RoomSplit</strong>
+        </a>
+        <nav class="account-nav" aria-label="Account">
+          {% if g.current_user %}
+            <a href="{{ url_for('rooms.index') }}">My events</a>
+            <span class="account-name">Signed in as <strong>{{ g.current_user.username }}</strong></span>
             <form action="{{ url_for('auth.sign_out') }}" method="post">
-              <button type="submit">Sign out</button>
+              <button class="button button-small button-secondary" type="submit">Sign out</button>
             </form>
-          </nav>
-        {% endif %}
-      </header>
+          {% else %}
+            <a href="{{ url_for('auth.sign_in') }}">Sign in</a>
+            <a class="button button-small button-primary" href="{{ url_for('auth.register') }}">Get started</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+    <main id="main-content" class="site-main" tabindex="-1">
       {% block content %}{% endblock %}
     </main>
+    <footer class="site-footer">
+      <span>RoomSplit <span aria-hidden="true">·</span> A little more clarity, together.</span>
+      <span>Track shared expenses. No money moves here.</span>
+    </footer>
   </body>
 </html>

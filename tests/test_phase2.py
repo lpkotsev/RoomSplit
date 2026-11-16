@@ -34,7 +34,7 @@ class PhaseTwoTests(unittest.TestCase):
     def create_room(self, client, password="room-password"):
         response = client.post(
             "/rooms/create",
-            data={"password": password},
+            data={"name": "Shared event", "password": password},
         )
         self.assertEqual(response.status_code, 302)
         room = next(iter(self.storage.rooms.values()))
@@ -216,7 +216,7 @@ class PhaseTwoTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(room.administrator_id, member_id)
-        room_page = owner.get(f"/rooms/{room.id}")
+        room_page = owner.get(f"/rooms/{room.id}/members")
         self.assertEqual(room_page.status_code, 200)
         self.assertIn(b"(administrator)", room_page.data)
 

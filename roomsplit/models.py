@@ -13,6 +13,7 @@ class AccountRecord:
 @dataclass
 class RoomRecord:
     id: str
+    name: str
     code: str
     invite_token: str
     password_hash: str
@@ -60,16 +61,4 @@ class RepaymentRecord:
     amount: Decimal
     repayment_date: date
     note: str
-    created_by: str
-
-
-@dataclass
-class RefundRecord:
-    id: str
-    room_id: str
-    amount: Decimal
-    refund_date: date
-    note: str
-    expense_id: str | None
-    payer_amounts: dict[str, Decimal] | None
     created_by: str

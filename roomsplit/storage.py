@@ -4,7 +4,6 @@ from .models import (
     AccountRecord,
     CategoryRecord,
     ExpenseRecord,
-    RefundRecord,
     RepaymentRecord,
     RoomRecord,
 )
@@ -17,4 +16,3 @@ class RuntimeStorage:
     categories: dict[str, CategoryRecord] = field(default_factory=dict)
     expenses: dict[str, ExpenseRecord] = field(default_factory=dict)
     repayments: dict[str, RepaymentRecord] = field(default_factory=dict)
-    refunds: dict[str, RefundRecord] = field(default_factory=dict)

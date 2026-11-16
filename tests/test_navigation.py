@@ -39,6 +39,25 @@ class NavigationTests(unittest.TestCase):
         self.assertEqual(client.get("/register").status_code, 200)
         self.assertEqual(client.get("/sign-in").status_code, 200)
 
+    def test_shared_layout_and_home_actions_have_accessible_styling_hooks(self):
+        client = self.app.test_client()
+        home = client.get("/")
+        registration = client.get("/register")
+
+        self.assertIn(b'class="skip-link"', home.data)
+        self.assertIn(b'class="site-header"', home.data)
+        self.assertIn(b'class="hero-art"', home.data)
+        self.assertIn(b'aria-hidden="true"', home.data)
+        self.assertIn(b'class="button button-primary"', home.data)
+        self.assertIn(b'class="button button-secondary"', home.data)
+        self.assertIn(b'class="site-header"', registration.data)
+        self.assertIn(b'<label for="username">', registration.data)
+        stylesheet = client.get("/static/style.css")
+        self.assertEqual(stylesheet.status_code, 200)
+        self.assertIn(b":focus-visible", stylesheet.data)
+        self.assertIn(b"@media", stylesheet.data)
+        stylesheet.close()
+
     def test_signed_in_member_can_navigate_from_home_to_room_forms(self):
         client = self.create_signed_in_user("member")
 
@@ -47,17 +66,17 @@ class NavigationTests(unittest.TestCase):
 
         rooms_page = client.get("/rooms")
         self.assertEqual(rooms_page.status_code, 200)
-        self.assertIn(b"You have not joined a room yet.", rooms_page.data)
+        self.assertIn(b"You have not joined an event yet.", rooms_page.data)
         created = client.post(
             "/rooms/create",
-            data={"password": "room-password"},
+            data={"name": "Shared event", "password": "room-password"},
         )
         self.assertEqual(created.status_code, 302)
         room = next(iter(self.storage.rooms.values()))
 
         room_page = client.get(f"/rooms/{room.id}")
         self.assertEqual(room_page.status_code, 200)
-        self.assertIn(
+        self.assertNotIn(
             f'href="/rooms/{room.id}/categories"'.encode(),
             room_page.data,
         )
@@ -65,8 +84,9 @@ class NavigationTests(unittest.TestCase):
             f'href="/rooms/{room.id}/expenses/new"'.encode(),
             room_page.data,
         )
-        self.assertIn(b"Create your first category", room_page.data)
-        self.assertIn(b"Record your first expense", room_page.data)
+        self.assertNotIn(b"<h2>Categories</h2>", room_page.data)
+        expense_list = client.get(f"/rooms/{room.id}/expenses")
+        self.assertIn(b"Record your first expense", expense_list.data)
 
         categories_page = client.get(f"/rooms/{room.id}/categories")
         self.assertEqual(categories_page.status_code, 200)
@@ -76,11 +96,8 @@ class NavigationTests(unittest.TestCase):
             f"/rooms/{room.id}/expenses/new"
         )
         self.assertEqual(empty_expense_form.status_code, 200)
-        self.assertIn(b"Create a category before recording an expense.", empty_expense_form.data)
-        self.assertIn(
-            f'href="/rooms/{room.id}/categories"'.encode(),
-            empty_expense_form.data,
-        )
+        self.assertIn(b'name="category_name"', empty_expense_form.data)
+        self.assertIn(b'<option value="Restaurant"', empty_expense_form.data)
 
         category = client.post(
             f"/rooms/{room.id}/categories",

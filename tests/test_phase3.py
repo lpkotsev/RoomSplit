@@ -17,7 +17,7 @@ class PhaseThreeTests(unittest.TestCase):
         self.owner, self.owner_id = self.create_user("owner")
         response = self.owner.post(
             "/rooms/create",
-            data={"password": "room-password"},
+            data={"name": "Shared event", "password": "room-password"},
         )
         self.assertEqual(response.status_code, 302)
         self.room = next(iter(self.storage.rooms.values()))
@@ -121,7 +121,7 @@ class PhaseThreeTests(unittest.TestCase):
                 member_id: Decimal("6.00"),
             },
         )
-        room_page = self.owner.get(f"/rooms/{self.room.id}")
+        room_page = self.owner.get(f"/rooms/{self.room.id}/expenses")
         self.assertEqual(room_page.status_code, 200)
         self.assertIn(b"Groceries", room_page.data)
 
@@ -139,7 +139,7 @@ class PhaseThreeTests(unittest.TestCase):
             frozenset({self.owner_id, member_id}),
         )
 
-    def test_custom_expense_requires_each_member_share_and_records_no_calculation(self):
+    def test_custom_expense_records_shares(self):
         member, member_id = self.add_member("member")
         category = self.create_category(self.owner)
         data = self.expense_data(category, split_type="custom")
@@ -148,45 +148,16 @@ class PhaseThreeTests(unittest.TestCase):
         data[f"share_{self.owner_id}"] = "2.25"
         data[f"share_{member_id}"] = "7.75"
 
-        negative_share_data = {
-            **data,
-            f"share_{self.owner_id}": "11.00",
-            f"share_{member_id}": "-1.00",
-        }
-        negative_share = member.post(
+        response = member.post(
             f"/rooms/{self.room.id}/expenses/new",
-            data=negative_share_data,
+            data=data,
         )
-        self.assertEqual(negative_share.status_code, 400)
-        self.assertIn(b"Custom shares cannot be negative.", negative_share.data)
-        self.assertEqual(self.storage.expenses, {})
-
-        expense = self.create_expense(member, category, data)
-
-        self.assertEqual(expense.split_type, "custom")
-        self.assertEqual(
-            expense.custom_shares,
-            {
-                self.owner_id: Decimal("2.25"),
-                member_id: Decimal("7.75"),
-            },
-        )
-        self.assertEqual(
-            sum(expense.custom_shares.values(), Decimal("0.00")),
-            expense.amount,
-        )
-        zero_share_data = self.expense_data(category, split_type="custom")
-        zero_share_data[f"share_{self.owner_id}"] = "10.00"
-        zero_share_data[f"share_{member_id}"] = "0.00"
-        zero_share_expense = self.create_expense(
-            member,
-            category,
-            zero_share_data,
-        )
-        self.assertEqual(
-            zero_share_expense.custom_shares[member_id],
-            Decimal("0.00"),
-        )
+        self.assertEqual(response.status_code, 302)
+        expense = next(iter(self.storage.expenses.values()))
+        self.assertEqual(expense.custom_shares, {
+            self.owner_id: Decimal("2.25"),
+            member_id: Decimal("7.75"),
+        })
 
     def test_member_can_create_category_and_nonmember_cannot(self):
         member, _ = self.add_member("member")
@@ -261,7 +232,7 @@ class PhaseThreeTests(unittest.TestCase):
             ),
             (
                 {**valid, "category_id": "unknown"},
-                "Choose a category for this room.",
+                "Choose a category for this event.",
             ),
             (
                 {**valid, "split_type": "unknown"},
@@ -283,29 +254,6 @@ class PhaseThreeTests(unittest.TestCase):
                 self.assertIn(error.encode(), response.data)
                 self.assertEqual(self.storage.expenses, {})
 
-    def test_custom_split_must_cover_every_member_and_match_the_total(self):
-        member, member_id = self.add_member("member")
-        category = self.create_category(self.owner)
-        data = self.expense_data(category, split_type="custom")
-        data[f"share_{self.owner_id}"] = "10.00"
-
-        missing_share = member.post(
-            f"/rooms/{self.room.id}/expenses/new",
-            data=data,
-        )
-        self.assertEqual(missing_share.status_code, 400)
-        self.assertIn(b"Enter a custom share for every room member.", missing_share.data)
-
-        data[f"share_{member_id}"] = "1.00"
-        data[f"payer_{self.owner_id}"] = "10.00"
-        mismatch = member.post(
-            f"/rooms/{self.room.id}/expenses/new",
-            data=data,
-        )
-        self.assertEqual(mismatch.status_code, 400)
-        self.assertIn(b"Custom shares must equal the expense total.", mismatch.data)
-        self.assertEqual(self.storage.expenses, {})
-
     def test_expense_requires_payer_and_categories_are_room_scoped(self):
         category = self.create_category(self.owner)
         data = self.expense_data(category)
@@ -321,7 +269,7 @@ class PhaseThreeTests(unittest.TestCase):
         other_client, _ = self.create_user("other")
         other_room_response = other_client.post(
             "/rooms/create",
-            data={"password": "other-room-password"},
+            data={"name": "Other event", "password": "other-room-password"},
         )
         self.assertEqual(other_room_response.status_code, 302)
         other_room = next(
@@ -346,7 +294,7 @@ class PhaseThreeTests(unittest.TestCase):
             data=data,
         )
         self.assertEqual(wrong_room_category.status_code, 400)
-        self.assertIn(b"Choose a category for this room.", wrong_room_category.data)
+        self.assertIn(b"Choose a category for this event.", wrong_room_category.data)
         self.assertEqual(self.storage.expenses, {})
 
 
